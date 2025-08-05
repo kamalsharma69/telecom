@@ -427,7 +427,7 @@ const CustomerDashboard: React.FC = () => {
                   className="flex items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-all duration-200 group"
                 >
                   <div className="p-3 bg-green-600 text-white rounded-lg mr-4 group-hover:scale-110 transition-transform">
-                    <Sim className="w-6 h-6" />
+                    <Smartphone className="w-6 h-6" />
                   </div>
                   <div className="text-left">
                     <h4 className="font-semibold text-gray-900">Activate SIM</h4>
