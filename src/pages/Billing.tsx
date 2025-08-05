@@ -5,7 +5,6 @@ import {
   Download,
   CreditCard,
   Calendar,
-  DollarSign,
   FileText,
   Filter,
   Search,
