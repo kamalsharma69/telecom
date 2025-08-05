@@ -93,7 +93,7 @@ const CustomerDashboard: React.FC = () => {
 
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: Activity, badge: null },
-    { id: 'activate-sim', label: 'Activate SIM', icon: Sim, badge: null },
+    { id: 'activate-sim', label: 'Activate SIM', icon: Smartphone, badge: null },
     { id: 'view-plans', label: 'View Plans', icon: Eye, badge: '3 new' },
     { id: 'my-bills', label: 'My Bills', icon: CreditCard, badge: null, path: '/billing' },
     { id: 'my-sims', label: 'My SIMs', icon: Smartphone, badge: null },
