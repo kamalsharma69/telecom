@@ -173,7 +173,7 @@ const CustomerDashboard: React.FC = () => {
                 </div>
                 
                 <button type="submit" className="btn-primary flex items-center space-x-2">
-                  <Sim className="w-5 h-5" />
+                  <Smartphone className="w-5 h-5" />
                   <span>Activate SIM</span>
                 </button>
               </form>
