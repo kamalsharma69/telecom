@@ -1,0 +1,31 @@
+reate a minitel application this is a telecom application with backend in spring boot microservices with user services have endpoints as login register update and view profile, sim service has view sim, buy a plan, delete sim, get sims of a user then I have plan service in which you can view plan and admin can add plan , update plan , delete plan, then I have bill service for generating monthly bills, previous bills, bill by simid, then I have a sim-request service where admin can view pending requests, approve requests and user can see its requests
+Milestone 4: React Frontend + UI Integration
+
+
+Goals:
+
+· Develop a responsive, user-friendly frontend
+
+· Integrate frontend with backend services
+
+· Component-based design
+
+· React Router
+
+· Form validation
+
+· TDD with Jest + RTL
+
+
+
+Functionalities:
+
+· User login/register with JWT storage
+
+· Customer dashboard: activate SIM, choose plans, view bills
+
+· Admin dashboard: manage plans, approve SIMs
+
+· Axios API integration
+
+· Route guards for role-based access
