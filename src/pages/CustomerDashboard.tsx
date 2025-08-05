@@ -136,7 +136,7 @@ const CustomerDashboard: React.FC = () => {
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
               <div className="flex items-center mb-6">
                 <div className="p-3 bg-blue-50 rounded-xl mr-4">
-                  <Sim className="w-8 h-8 text-blue-600" />
+                  <Smartphone className="w-8 h-8 text-blue-600" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Activate New SIM</h2>
