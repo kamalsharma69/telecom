@@ -92,12 +92,12 @@ const CustomerDashboard: React.FC = () => {
   ];
 
   const navigationItems = [
-    { id: 'overview', label: 'Overview', icon: Activity, badge: null },
-    { id: 'activate-sim', label: 'Activate SIM', icon: Smartphone, badge: null },
-    { id: 'view-plans', label: 'View Plans', icon: Eye, badge: '3 new' },
-    { id: 'my-bills', label: 'My Bills', icon: CreditCard, badge: null, path: '/billing' },
-    { id: 'my-sims', label: 'My SIMs', icon: Smartphone, badge: null },
-    { id: 'settings', label: 'Settings', icon: Settings, badge: null }
+    { id: 'overview', label: 'Overview', icon: Activity, badge: null as string | null },
+    { id: 'activate-sim', label: 'Activate SIM', icon: Smartphone, badge: null as string | null },
+    { id: 'view-plans', label: 'View Plans', icon: Eye, badge: '3 new' as string | null },
+    { id: 'my-bills', label: 'My Bills', icon: CreditCard, badge: null as string | null, path: '/billing' },
+    { id: 'my-sims', label: 'My SIMs', icon: Smartphone, badge: null as string | null },
+    { id: 'settings', label: 'Settings', icon: Settings, badge: null as string | null }
   ];
 
   const handleSectionChange = (sectionId: string, path?: string) => {
