@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Smartphone, 
-  Eye, 
-  CreditCard, 
-  Sim, 
-  LogOut, 
+import {
+  Smartphone,
+  Eye,
+  CreditCard,
+  LogOut,
   Activity,
   Plus,
   Wifi,
-  Calendar,
   BarChart3,
   Signal,
-  Download,
   Settings,
   Bell,
   Search,
@@ -20,8 +17,7 @@ import {
   X,
   ChevronRight,
   TrendingUp,
-  Zap,
-  Shield
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
