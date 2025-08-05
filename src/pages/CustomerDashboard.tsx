@@ -466,7 +466,7 @@ const CustomerDashboard: React.FC = () => {
                         {activity.type === 'payment' && <CreditCard className="w-5 h-5 text-green-600" />}
                         {activity.type === 'data' && <BarChart3 className="w-5 h-5 text-yellow-600" />}
                         {activity.type === 'plan' && <Eye className="w-5 h-5 text-blue-600" />}
-                        {activity.type === 'sim' && <Sim className="w-5 h-5 text-purple-600" />}
+                        {activity.type === 'sim' && <Smartphone className="w-5 h-5 text-purple-600" />}
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">{activity.desc}</p>
