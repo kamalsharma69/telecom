@@ -1,6 +1,6 @@
 -- Insert demo users
-INSERT INTO users (id, email, password, full_name, role, is_active, created_at, updated_at) VALUES 
-(1, 'admin@telecom.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'Admin User', 'ADMIN', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'customer@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'Customer User', 'CUSTOMER', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO users (full_name, email, password, role, phone_number, address, is_active, created_at, updated_at) VALUES
+('Admin User', 'admin@telecom.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'ADMIN', '+1 (555) 000-0001', '123 Admin St, Admin City', true, NOW(), NOW()),
+('Customer User', 'customer@email.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'CUSTOMER', '+1 (555) 000-0002', '456 Customer Ave, Customer Town', true, NOW(), NOW());
 
--- Passwords are encoded version of 'password123'
+-- Password for both users is 'secret'
