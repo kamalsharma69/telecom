@@ -37,6 +37,7 @@ const CustomerDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
+  const [activatingPlan, setActivatingPlan] = useState<string | null>(null);
 
   // Mock data for customer with more interactive elements
   const activeSIMs = [
@@ -113,6 +114,97 @@ const CustomerDashboard: React.FC = () => {
 
     loadData();
   }, [user?.id]);
+
+  const handleSimActivation = async (planId: string) => {
+    try {
+      setActivatingPlan(planId);
+      const newSim = await SimService.activateSim(parseInt(planId));
+      setUserSimCards(prev => [...prev, newSim]);
+      alert('SIM activated successfully!');
+      setActiveSection('my-sims');
+    } catch (error) {
+      console.error('Error activating SIM:', error);
+      alert('Failed to activate SIM. Please try again.');
+    } finally {
+      setActivatingPlan(null);
+    }
+  };
+
+  const SimActivationForm = ({ availablePlans, onActivate }: { availablePlans: any[], onActivate: (planId: string) => void }) => {
+    const [selectedPlan, setSelectedPlan] = useState('');
+    const [simNumber, setSimNumber] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedPlan) {
+        alert('Please select a plan');
+        return;
+      }
+      onActivate(selectedPlan);
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
+        <div className="form-group">
+          <label className="form-label">
+            <Smartphone className="w-4 h-4 mr-2 text-blue-600" />
+            SIM Card Number
+          </label>
+          <input
+            type="text"
+            value={simNumber}
+            onChange={(e) => setSimNumber(e.target.value)}
+            className="input-field"
+            placeholder="Enter 20-digit SIM number"
+            maxLength={20}
+          />
+          <p className="text-xs text-gray-500 mt-1 flex items-center">
+            <Shield className="w-3 h-3 mr-1" />
+            Found on your SIM card packaging
+          </p>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">
+            <Eye className="w-4 h-4 mr-2 text-blue-600" />
+            Choose Plan
+          </label>
+          <select
+            value={selectedPlan}
+            onChange={(e) => setSelectedPlan(e.target.value)}
+            className="input-field"
+            required
+          >
+            <option value="">Select a plan</option>
+            {availablePlans.map(plan => (
+              <option key={plan.id} value={plan.id}>
+                {plan.name} - ${plan.price}/month
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={activatingPlan !== null}
+          className="btn-primary flex items-center space-x-2 w-full disabled:opacity-50"
+        >
+          {activatingPlan ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Activating...</span>
+            </>
+          ) : (
+            <>
+              <Smartphone className="w-5 h-5" />
+              <span>Activate SIM</span>
+              <Sparkles className="w-4 h-4 ml-2" />
+            </>
+          )}
+        </button>
+      </form>
+    );
+  };
 
   const recentActivities = [
     { id: '1', type: 'payment', desc: 'Monthly bill paid', date: '2 days ago', amount: '$70', icon: CreditCard, color: 'green' },
@@ -244,12 +336,23 @@ const CustomerDashboard: React.FC = () => {
         </div>
       </div>
       
-      <button className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 ${
-        plan.popular 
-          ? 'btn-primary' 
-          : 'bg-gray-100 hover:bg-blue-100 text-gray-800 hover:text-blue-800'
-      }`}>
-        {plan.popular ? 'Upgrade Now' : 'Select Plan'}
+      <button
+        onClick={() => handleSimActivation(plan.id)}
+        disabled={activatingPlan === plan.id}
+        className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 ${
+          plan.popular
+            ? 'btn-primary'
+            : 'bg-gray-100 hover:bg-blue-100 text-gray-800 hover:text-blue-800'
+        }`}
+      >
+        {activatingPlan === plan.id ? (
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <span>Activating...</span>
+          </div>
+        ) : (
+          plan.popular ? 'Upgrade Now' : 'Select Plan'
+        )}
       </button>
     </div>
   );
