@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { AuthService, checkBackendHealth } from '../services/api';
 
 interface User {
   id: number;
@@ -67,22 +68,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
         if (storedToken && storedUser) {
           try {
-            const parsedUser = JSON.parse(storedUser);
-            if (parsedUser && parsedUser.email) {
-              setUser(parsedUser);
-              setIsAuthenticated(true);
+            // Check if backend is available
+            const backendAvailable = await checkBackendHealth();
+
+            if (backendAvailable && !storedToken.startsWith('mock-')) {
+              // Validate token with backend
+              try {
+                const response = await AuthService.validateToken();
+                if (response.user) {
+                  setUser(response.user);
+                  setIsAuthenticated(true);
+                } else {
+                  throw new Error('Invalid token response');
+                }
+              } catch (error) {
+                console.warn('Token validation failed, clearing auth state');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+              }
             } else {
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
+              // Use stored user data (mock or offline mode)
+              const parsedUser = JSON.parse(storedUser);
+              if (parsedUser && parsedUser.email) {
+                setUser(parsedUser);
+                setIsAuthenticated(true);
+              } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+              }
             }
           } catch (error) {
+            console.error('Error validating auth:', error);
             // Invalid stored data, clear storage
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -102,16 +125,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
 
-      // Frontend-only authentication with mock users
-      const foundUser = mockUsers.find(u => u.email === email && u.password === password);
+      // Try backend authentication first
+      const response = await AuthService.login(email, password);
 
-      if (foundUser) {
-        const { password: _, ...userWithoutPassword } = foundUser;
-        const mockToken = 'frontend-jwt-token-' + Date.now();
-
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        setUser(userWithoutPassword);
+      if (response.token && response.user) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
         setIsAuthenticated(true);
         return true;
       }
@@ -129,33 +149,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
 
-      // Check if email already exists
-      const existingUser = mockUsers.find(u => u.email === data.email);
-      if (existingUser) {
-        return false; // Email already exists
+      // Try backend registration first
+      const response = await AuthService.register(data);
+
+      if (response.token && response.user) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return true;
       }
 
-      // Frontend-only registration with mock data
-      const newUser: User = {
-        id: Date.now(),
-        email: data.email,
-        fullName: data.fullName,
-        role: data.role,
-        phoneNumber: `+1 (555) ${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-        address: '123 New User St, Registration City',
-        isActive: true
-      };
-
-      // Add to mock users for future login
-      mockUsers.push({ ...newUser, password: data.password } as any);
-
-      const mockToken = 'frontend-jwt-token-' + Date.now();
-
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
-      setIsAuthenticated(true);
-      return true;
+      return false;
     } catch (error) {
       console.error('Registration error:', error);
       return false;
