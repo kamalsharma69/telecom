@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ArrowLeft,
@@ -18,78 +18,84 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BillingService } from '../services/api';
 
 const Billing: React.FC = () => {
   const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [bills, setBills] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock billing data
-  const bills = [
-    {
-      id: 'INV-2024-001',
-      date: '2024-01-01',
-      dueDate: '2024-01-15',
-      amount: 70.00,
-      status: 'paid',
-      services: [
-        { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' },
-        { name: 'Basic 4G Plan', amount: 25.00, details: '5GB Data, Unlimited Calls/Texts' }
-      ],
-      paymentMethod: 'Credit Card ****4532',
-      downloadUrl: '#'
-    },
-    {
-      id: 'INV-2023-012',
-      date: '2023-12-01',
-      dueDate: '2023-12-15',
-      amount: 70.00,
-      status: 'paid',
-      services: [
-        { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' },
-        { name: 'Basic 4G Plan', amount: 25.00, details: '5GB Data, Unlimited Calls/Texts' }
-      ],
-      paymentMethod: 'Credit Card ****4532',
-      downloadUrl: '#'
-    },
-    {
-      id: 'INV-2023-011',
-      date: '2023-11-01',
-      dueDate: '2023-11-15',
-      amount: 45.00,
-      status: 'paid',
-      services: [
-        { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' }
-      ],
-      paymentMethod: 'Credit Card ****4532',
-      downloadUrl: '#'
-    },
-    {
-      id: 'INV-2023-010',
-      date: '2023-10-01',
-      dueDate: '2023-10-15',
-      amount: 45.00,
-      status: 'overdue',
-      services: [
-        { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' }
-      ],
-      paymentMethod: 'Failed Payment',
-      downloadUrl: '#'
-    },
-    {
-      id: 'INV-2024-002',
-      date: '2024-02-01',
-      dueDate: '2024-02-15',
-      amount: 70.00,
-      status: 'pending',
-      services: [
-        { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' },
-        { name: 'Basic 4G Plan', amount: 25.00, details: '5GB Data, Unlimited Calls/Texts' }
-      ],
-      paymentMethod: 'Auto-pay enabled',
-      downloadUrl: '#'
-    }
-  ];
+  // Load bills on component mount
+  useEffect(() => {
+    const loadBills = async () => {
+      try {
+        setLoading(true);
+        const userBills = await BillingService.getBills(user?.id || 1);
+        const formattedBills = userBills.map((bill: any) => ({
+          id: `INV-${bill.id}`,
+          date: bill.month.includes('2024') ? '2024-01-01' : bill.month.includes('December') ? '2023-12-01' : '2023-11-01',
+          dueDate: bill.dueDate,
+          amount: bill.amount,
+          status: bill.status.toLowerCase(),
+          services: [
+            { name: bill.planName, amount: bill.amount, details: `${bill.dataUsage} Data Usage` }
+          ],
+          paymentMethod: bill.status === 'Paid' ? 'Credit Card ****4532' : 'Auto-pay enabled',
+          downloadUrl: '#'
+        }));
+        setBills(formattedBills);
+      } catch (error) {
+        console.error('Error loading bills:', error);
+        // Fallback to mock data
+        setBills([
+          {
+            id: 'INV-2024-001',
+            date: '2024-01-01',
+            dueDate: '2024-01-15',
+            amount: 70.00,
+            status: 'paid',
+            services: [
+              { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' },
+              { name: 'Basic 4G Plan', amount: 25.00, details: '5GB Data, Unlimited Calls/Texts' }
+            ],
+            paymentMethod: 'Credit Card ****4532',
+            downloadUrl: '#'
+          },
+          {
+            id: 'INV-2023-012',
+            date: '2023-12-01',
+            dueDate: '2023-12-15',
+            amount: 70.00,
+            status: 'paid',
+            services: [
+              { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' },
+              { name: 'Basic 4G Plan', amount: 25.00, details: '5GB Data, Unlimited Calls/Texts' }
+            ],
+            paymentMethod: 'Credit Card ****4532',
+            downloadUrl: '#'
+          },
+          {
+            id: 'INV-2023-011',
+            date: '2023-11-01',
+            dueDate: '2023-11-15',
+            amount: 45.00,
+            status: 'paid',
+            services: [
+              { name: 'Premium 5G Plan', amount: 45.00, details: '15GB Data, Unlimited Calls/Texts' }
+            ],
+            paymentMethod: 'Credit Card ****4532',
+            downloadUrl: '#'
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBills();
+  }, [user?.id]);
 
   const filteredBills = bills.filter(bill => {
     if (selectedFilter !== 'all' && bill.status !== selectedFilter) return false;
@@ -127,10 +133,14 @@ const Billing: React.FC = () => {
     }
   };
 
-  const handleDownloadPDF = (billId: string) => {
-    // In a real app, this would generate and download a PDF
-    console.log('Downloading PDF for bill:', billId);
-    alert('PDF download feature would be implemented here');
+  const handleDownloadPDF = async (billId: string) => {
+    try {
+      const billIdNumber = parseInt(billId.replace('INV-', ''));
+      await BillingService.downloadBill(billIdNumber);
+    } catch (error) {
+      console.error('Error downloading bill:', error);
+      alert('PDF download feature would be implemented here');
+    }
   };
 
   const totalPaid = bills.filter(b => b.status === 'paid').reduce((sum, b) => sum + b.amount, 0);
@@ -308,74 +318,83 @@ const Billing: React.FC = () => {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Invoice ID</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Due Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Amount</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredBills.map(bill => (
-                  <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <FileText className="w-5 h-5 text-gray-400 mr-3" />
-                        <div>
-                          <div className="font-medium text-gray-900">{bill.id}</div>
-                          <div className="text-sm text-gray-500">{bill.paymentMethod}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {new Date(bill.date).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {new Date(bill.dueDate).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-gray-900">${bill.amount.toFixed(2)}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(bill.status)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleDownloadPDF(bill.id)}
-                          className="btn-secondary text-sm flex items-center space-x-1"
-                          title="Download PDF"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>PDF</span>
-                        </button>
-                        <button
-                          className="btn-secondary text-sm"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading bills...</p>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Invoice ID</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Date</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Due Date</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Amount</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredBills.map(bill => (
+                    <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <FileText className="w-5 h-5 text-gray-400 mr-3" />
+                          <div>
+                            <div className="font-medium text-gray-900">{bill.id}</div>
+                            <div className="text-sm text-gray-500">{bill.paymentMethod}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {new Date(bill.date).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {new Date(bill.dueDate).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-semibold text-gray-900">${bill.amount.toFixed(2)}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getStatusBadge(bill.status)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDownloadPDF(bill.id)}
+                            className="btn-secondary text-sm flex items-center space-x-1"
+                            title="Download PDF"
+                          >
+                            <Download className="w-4 h-4" />
+                            <span>PDF</span>
+                          </button>
+                          <button
+                            className="btn-secondary text-sm"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
           
-          {filteredBills.length === 0 && (
+          {filteredBills.length === 0 && !loading && (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No bills found</h3>
