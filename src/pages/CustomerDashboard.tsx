@@ -281,7 +281,7 @@ const CustomerDashboard: React.FC = () => {
                 </div>
               </div>
               
-              <SimActivationForm />
+              <SimActivationForm availablePlans={availablePlans} onActivate={handleSimActivation} />
             </div>
           </div>
         );
