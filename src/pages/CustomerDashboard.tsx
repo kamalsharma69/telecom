@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { PlanService, SimService } from '../services/api';
 import { 
   Smartphone, 
   Eye, 
@@ -67,44 +68,51 @@ const CustomerDashboard: React.FC = () => {
     }
   ];
 
-  const availablePlans = [
-    { 
-      id: '1', 
-      name: 'Basic 4G', 
-      price: 25, 
-      data: '5 GB', 
-      calls: 'Unlimited', 
-      texts: 'Unlimited',
-      speed: '50 Mbps',
-      popular: false,
-      features: ['Mobile Hotspot', 'HD Video', 'Music Streaming'],
-      savings: null
-    },
-    { 
-      id: '2', 
-      name: 'Premium 5G', 
-      price: 45, 
-      data: '15 GB', 
-      calls: 'Unlimited', 
-      texts: 'Unlimited',
-      speed: '200 Mbps',
-      popular: true,
-      features: ['Mobile Hotspot', '4K Video', 'Music Streaming', 'Gaming Priority'],
-      savings: '$10'
-    },
-    { 
-      id: '3', 
-      name: 'Ultimate 5G', 
-      price: 65, 
-      data: '50 GB', 
-      calls: 'Unlimited', 
-      texts: 'Unlimited',
-      speed: '500 Mbps',
-      popular: false,
-      features: ['Mobile Hotspot', '4K Video', 'Music Streaming', 'Gaming Priority', 'International Roaming'],
-      savings: '$15'
-    }
-  ];
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
+  const [userSimCards, setUserSimCards] = useState<any[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [loadingSims, setLoadingSims] = useState(false);
+
+  // Load plans and SIM cards on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingPlans(true);
+        const plans = await PlanService.getPlans();
+        const formattedPlans = plans.map((plan: any) => ({
+          id: plan.id.toString(),
+          name: plan.name,
+          price: plan.price,
+          data: plan.data,
+          calls: 'Unlimited',
+          texts: 'Unlimited',
+          speed: plan.data === '5GB' ? '50 Mbps' : plan.data === '15GB' ? '200 Mbps' : '500 Mbps',
+          popular: plan.name.includes('Premium'),
+          features: plan.name.includes('Basic') ? ['Mobile Hotspot', 'HD Video', 'Music Streaming'] :
+                   plan.name.includes('Premium') ? ['Mobile Hotspot', '4K Video', 'Music Streaming', 'Gaming Priority'] :
+                   ['Mobile Hotspot', '4K Video', 'Music Streaming', 'Gaming Priority', 'International Roaming'],
+          savings: plan.price > 30 ? '$10' : null
+        }));
+        setAvailablePlans(formattedPlans);
+      } catch (error) {
+        console.error('Error loading plans:', error);
+      } finally {
+        setLoadingPlans(false);
+      }
+
+      try {
+        setLoadingSims(true);
+        const sims = await SimService.getSimCards(user?.id || 1);
+        setUserSimCards(sims);
+      } catch (error) {
+        console.error('Error loading SIM cards:', error);
+      } finally {
+        setLoadingSims(false);
+      }
+    };
+
+    loadData();
+  }, [user?.id]);
 
   const recentActivities = [
     { id: '1', type: 'payment', desc: 'Monthly bill paid', date: '2 days ago', amount: '$70', icon: CreditCard, color: 'green' },
@@ -273,45 +281,7 @@ const CustomerDashboard: React.FC = () => {
                 </div>
               </div>
               
-              <form className="space-y-6 max-w-md">
-                <div className="form-group">
-                  <label className="form-label">
-                    <Smartphone className="w-4 h-4 mr-2 text-blue-600" />
-                    SIM Card Number
-                  </label>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="Enter 20-digit SIM number"
-                    maxLength={20}
-                  />
-                  <p className="text-xs text-gray-500 mt-1 flex items-center">
-                    <Shield className="w-3 h-3 mr-1" />
-                    Found on your SIM card packaging
-                  </p>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">
-                    <Eye className="w-4 h-4 mr-2 text-blue-600" />
-                    Choose Plan
-                  </label>
-                  <select className="input-field">
-                    <option value="">Select a plan</option>
-                    {availablePlans.map(plan => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name} - ${plan.price}/month
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <button type="submit" className="btn-primary flex items-center space-x-2 w-full">
-                  <Smartphone className="w-5 h-5" />
-                  <span>Activate SIM</span>
-                  <Sparkles className="w-4 h-4 ml-2" />
-                </button>
-              </form>
+              <SimActivationForm />
             </div>
           </div>
         );
@@ -324,11 +294,20 @@ const CustomerDashboard: React.FC = () => {
               <p className="text-gray-600 text-xl">Upgrade or change your plan anytime with no hidden fees</p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8">
-              {availablePlans.map(plan => (
-                <PlanCard key={plan.id} plan={plan} />
-              ))}
-            </div>
+            {loadingPlans ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading plans...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-8">
+                {availablePlans.map(plan => (
+                  <PlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+            )}
           </div>
         );
 
@@ -345,82 +324,81 @@ const CustomerDashboard: React.FC = () => {
               </div>
               
               <div className="overflow-x-auto">
-                <table className="data-table">
-                  <thead>
-                    <tr className="table-header">
-                      <th>Phone Number</th>
-                      <th>Plan & Network</th>
-                      <th>Status</th>
-                      <th>Data Usage</th>
-                      <th>Signal & Speed</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeSIMs.map(sim => (
-                      <tr key={sim.id} className="table-row group">
-                        <td>
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                              <Smartphone className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{sim.number}</div>
-                              <div className="text-sm text-gray-500">{sim.location}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div>
-                            <div className="font-medium text-gray-900">{sim.plan}</div>
-                            <div className="flex items-center text-sm text-gray-500">
-                              <Signal className="w-3 h-3 mr-1" />
-                              {sim.networkType} Network
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="status-badge status-active">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                            {sim.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="space-y-2">
-                            <div className="progress-bar">
-                              <div 
-                                className="progress-fill" 
-                                style={{ width: `${(sim.dataUsed / sim.dataLimit) * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-600">
-                              {sim.dataUsed} GB / {sim.dataLimit} GB
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="space-y-1">
-                            <div className="flex items-center">
-                              <Signal className="w-4 h-4 text-green-500 mr-2" />
-                              <span className="text-sm font-medium">{sim.signalStrength}%</span>
-                            </div>
-                            <div className="text-xs text-gray-500">{sim.speed}</div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="flex space-x-2">
-                            <button className="btn-secondary text-sm hover:scale-105 transition-transform">
-                              Manage
-                            </button>
-                            <button className="btn-danger text-sm hover:scale-105 transition-transform">
-                              Suspend
-                            </button>
-                          </div>
-                        </td>
+                {loadingSims ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <table className="data-table">
+                    <thead>
+                      <tr className="table-header">
+                        <th>Phone Number</th>
+                        <th>Plan & Status</th>
+                        <th>Data Usage</th>
+                        <th>Expiry Date</th>
+                        <th>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {userSimCards.map(sim => (
+                        <tr key={sim.id} className="table-row group">
+                          <td>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                <Smartphone className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{sim.number}</div>
+                                <div className="text-sm text-gray-500">Activated: {sim.activationDate}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div>
+                              <div className="font-medium text-gray-900">{sim.plan}</div>
+                              <span className={`status-badge ${
+                                sim.status === 'Active' ? 'status-active' : 'status-inactive'
+                              }`}>
+                                <div className={`w-2 h-2 rounded-full mr-2 ${
+                                  sim.status === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                                }`}></div>
+                                {sim.status}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="space-y-2">
+                              <div className="text-sm text-gray-600">
+                                {sim.dataUsed} / {sim.dataTotal}
+                              </div>
+                              <div className="progress-bar">
+                                <div
+                                  className="progress-fill"
+                                  style={{ width: sim.dataTotal === 'Unlimited' ? '100%' : `${(parseFloat(sim.dataUsed) / parseFloat(sim.dataTotal)) * 100}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="text-sm text-gray-600">{sim.expiryDate}</div>
+                          </td>
+                          <td>
+                            <div className="flex space-x-2">
+                              <button className="btn-secondary text-sm hover:scale-105 transition-transform">
+                                Manage
+                              </button>
+                              {sim.status === 'Active' && (
+                                <button className="btn-danger text-sm hover:scale-105 transition-transform">
+                                  Suspend
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>
@@ -509,9 +487,9 @@ const CustomerDashboard: React.FC = () => {
 
             {/* Real-time Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard 
-                title="Active SIMs" 
-                value={activeSIMs.length} 
+              <StatCard
+                title="Active SIMs"
+                value={userSimCards.filter(sim => sim.status === 'Active').length}
                 change="+1 this month"
                 icon={Smartphone}
                 color="blue"
