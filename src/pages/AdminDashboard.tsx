@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { PlanService, SimService } from '../services/api';
 import { 
   Users, 
   Settings, 
@@ -31,79 +32,47 @@ const AdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Mock data for admin
-  const pendingRequests = [
-    { 
-      id: '1', 
-      customerName: 'John Doe', 
-      email: 'john.doe@email.com',
-      simNumber: '1234567890123456',
-      planRequested: 'Premium 5G',
-      requestDate: '2024-01-15',
-      status: 'pending'
-    },
-    { 
-      id: '2', 
-      customerName: 'Jane Smith', 
-      email: 'jane.smith@email.com',
-      simNumber: '1234567890123457',
-      planRequested: 'Basic 4G',
-      requestDate: '2024-01-14',
-      status: 'pending'
-    },
-    { 
-      id: '3', 
-      customerName: 'Mike Johnson', 
-      email: 'mike.johnson@email.com',
-      simNumber: '1234567890123458',
-      planRequested: 'Ultimate 5G',
-      requestDate: '2024-01-13',
-      status: 'pending'
-    }
-  ];
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [managePlansData, setManagePlansData] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [loadingPlans, setLoadingPlans] = useState(false);
 
-  const managePlansData = [
-    { 
-      id: '1', 
-      name: 'Basic 4G', 
-      price: 25, 
-      data: '5 GB', 
-      speed: '50 Mbps',
-      subscribers: 1250,
-      revenue: '$31,250',
-      status: 'active'
-    },
-    { 
-      id: '2', 
-      name: 'Premium 5G', 
-      price: 45, 
-      data: '15 GB', 
-      speed: '200 Mbps',
-      subscribers: 2100,
-      revenue: '$94,500',
-      status: 'active'
-    },
-    { 
-      id: '3', 
-      name: 'Ultimate 5G', 
-      price: 65, 
-      data: '50 GB', 
-      speed: '500 Mbps',
-      subscribers: 850,
-      revenue: '$55,250',
-      status: 'active'
-    },
-    { 
-      id: '4', 
-      name: 'Student Plan', 
-      price: 15, 
-      data: '2 GB', 
-      speed: '25 Mbps',
-      subscribers: 650,
-      revenue: '$9,750',
-      status: 'inactive'
-    }
-  ];
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingRequests(true);
+        const requests = await SimService.getSimRequests();
+        setPendingRequests(requests.filter(req => req.status === 'Pending'));
+      } catch (error) {
+        console.error('Error loading SIM requests:', error);
+      } finally {
+        setLoadingRequests(false);
+      }
+
+      try {
+        setLoadingPlans(true);
+        const plans = await PlanService.getPlans();
+        const formattedPlans = plans.map((plan: any) => ({
+          id: plan.id.toString(),
+          name: plan.name,
+          price: plan.price,
+          data: plan.data,
+          speed: plan.data === '5GB' ? '50 Mbps' : plan.data === '15GB' ? '200 Mbps' : '500 Mbps',
+          subscribers: Math.floor(Math.random() * 3000) + 500,
+          revenue: `$${(plan.price * (Math.floor(Math.random() * 3000) + 500)).toLocaleString()}`,
+          status: 'active'
+        }));
+        setManagePlansData(formattedPlans);
+      } catch (error) {
+        console.error('Error loading plans:', error);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const recentActivities = [
     { id: '1', action: 'Plan approved', user: 'John Doe', time: '2 minutes ago', type: 'approval' },
@@ -135,21 +104,64 @@ const AdminDashboard: React.FC = () => {
     setSidebarOpen(false);
   };
 
-  const handleApproveRequest = (requestId: string) => {
-    console.log('Approving request:', requestId);
-    // Implementation would update the request status
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      await SimService.approveSimRequest(parseInt(requestId));
+      setPendingRequests(prev => prev.filter(req => req.id !== parseInt(requestId)));
+      alert('SIM request approved successfully!');
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('Failed to approve request. Please try again.');
+    }
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    console.log('Rejecting request:', requestId);
-    // Implementation would update the request status
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      await SimService.rejectSimRequest(parseInt(requestId));
+      setPendingRequests(prev => prev.filter(req => req.id !== parseInt(requestId)));
+      alert('SIM request rejected.');
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('Failed to reject request. Please try again.');
+    }
   };
 
-  const handleCreatePlan = (e: React.FormEvent) => {
+  const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Creating plan:', planForm);
-    // Implementation would create new plan
-    setPlanForm({ name: '', price: '', data: '', speed: '', description: '' });
+    try {
+      const newPlan = await PlanService.createPlan({
+        name: planForm.name,
+        price: parseFloat(planForm.price),
+        data: planForm.data,
+        description: planForm.description
+      });
+
+      const formattedPlan = {
+        id: newPlan.id.toString(),
+        name: newPlan.name,
+        price: newPlan.price,
+        data: newPlan.data,
+        speed: planForm.speed,
+        subscribers: 0,
+        revenue: '$0',
+        status: 'active'
+      };
+
+      if (editingPlan === 'new') {
+        setManagePlansData(prev => [...prev, formattedPlan]);
+      } else {
+        setManagePlansData(prev => prev.map(plan =>
+          plan.id === editingPlan ? formattedPlan : plan
+        ));
+      }
+
+      setPlanForm({ name: '', price: '', data: '', speed: '', description: '' });
+      setEditingPlan(null);
+      alert('Plan saved successfully!');
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      alert('Failed to save plan. Please try again.');
+    }
   };
 
   const handleEditPlan = (planId: string) => {
@@ -166,9 +178,17 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleDeletePlan = (planId: string) => {
-    console.log('Deleting plan:', planId);
-    // Implementation would delete the plan
+  const handleDeletePlan = async (planId: string) => {
+    if (confirm('Are you sure you want to delete this plan?')) {
+      try {
+        await PlanService.deletePlan(parseInt(planId));
+        setManagePlansData(prev => prev.filter(plan => plan.id !== planId));
+        alert('Plan deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting plan:', error);
+        alert('Failed to delete plan. Please try again.');
+      }
+    }
   };
 
   const StatCard = ({ title, value, change, icon: Icon, color = 'blue' }: any) => (
@@ -227,56 +247,73 @@ const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {pendingRequests.map(request => (
-                      <tr key={request.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900">{request.customerName}</div>
-                            <div className="text-sm text-gray-500">{request.email}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                            {request.simNumber}
-                          </code>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            {request.planRequested}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {request.requestDate}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="status-badge status-pending flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Pending
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => handleApproveRequest(request.id)}
-                              className="btn-success text-sm flex items-center space-x-1"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Approve</span>
-                            </button>
-                            <button 
-                              onClick={() => handleRejectRequest(request.id)}
-                              className="btn-danger text-sm flex items-center space-x-1"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              <span>Reject</span>
-                            </button>
-                            <button className="btn-secondary text-sm">
-                              <Eye className="w-4 h-4" />
-                            </button>
+                    {loadingRequests ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center">
+                          <div className="flex items-center justify-center">
+                            <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-3"></div>
+                            <span className="text-gray-600">Loading requests...</span>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : pendingRequests.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                          No pending requests
+                        </td>
+                      </tr>
+                    ) : (
+                      pendingRequests.map(request => (
+                        <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div>
+                              <div className="font-medium text-gray-900">{request.customerName}</div>
+                              <div className="text-sm text-gray-500">{request.email}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                              {request.phoneNumber}
+                            </code>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                              {request.planName}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {request.requestDate}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="status-badge status-pending flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {request.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleApproveRequest(request.id.toString())}
+                                className="btn-success text-sm flex items-center space-x-1"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Approve</span>
+                              </button>
+                              <button
+                                onClick={() => handleRejectRequest(request.id.toString())}
+                                className="btn-danger text-sm flex items-center space-x-1"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                <span>Reject</span>
+                              </button>
+                              <button className="btn-secondary text-sm">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -393,45 +430,56 @@ const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {managePlansData.map(plan => (
-                      <tr key={plan.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900">{plan.name}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-gray-900">${plan.price}/mo</span>
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">{plan.data}</td>
-                        <td className="px-6 py-4 text-gray-600">{plan.speed}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-gray-900 font-medium">{plan.subscribers.toLocaleString()}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-green-600">{plan.revenue}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`status-badge ${plan.status === 'active' ? 'status-active' : 'status-inactive'}`}>
-                            {plan.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => handleEditPlan(plan.id)}
-                              className="btn-secondary text-sm"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeletePlan(plan.id)}
-                              className="btn-danger text-sm"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                    {loadingPlans ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-8 text-center">
+                          <div className="flex items-center justify-center">
+                            <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mr-3"></div>
+                            <span className="text-gray-600">Loading plans...</span>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      managePlansData.map(plan => (
+                        <tr key={plan.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-900">{plan.name}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="font-semibold text-gray-900">${plan.price}/mo</span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">{plan.data}</td>
+                          <td className="px-6 py-4 text-gray-600">{plan.speed}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-gray-900 font-medium">{plan.subscribers.toLocaleString()}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="font-semibold text-green-600">{plan.revenue}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`status-badge ${plan.status === 'active' ? 'status-active' : 'status-inactive'}`}>
+                              {plan.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleEditPlan(plan.id)}
+                                className="btn-secondary text-sm"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePlan(plan.id)}
+                                className="btn-danger text-sm"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
