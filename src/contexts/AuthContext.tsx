@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { AuthService } from '../services/api';
 
 interface User {
   id: number;
@@ -68,29 +67,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
       try {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        
+
         if (storedToken && storedUser) {
           try {
-            // Try to validate token with backend if available
-            try {
-              await AuthService.validateToken();
-              const parsedUser = JSON.parse(storedUser);
+            const parsedUser = JSON.parse(storedUser);
+            if (parsedUser && parsedUser.email) {
               setUser(parsedUser);
               setIsAuthenticated(true);
-            } catch (error) {
-              // Backend not available, use stored user if valid
-              const parsedUser = JSON.parse(storedUser);
-              if (parsedUser && parsedUser.email) {
-                setUser(parsedUser);
-                setIsAuthenticated(true);
-              } else {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-              }
+            } else {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
             }
           } catch (error) {
             // Invalid stored data, clear storage
@@ -111,36 +101,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      
-      // Try real API first
-      try {
-        const response = await AuthService.login(email, password);
-        
-        if (response.token && response.user) {
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('user', JSON.stringify(response.user));
-          setUser(response.user);
-          setIsAuthenticated(true);
-          return true;
-        }
-      } catch (error) {
-        console.log('API not available, using mock authentication');
-        
-        // Fallback to mock authentication
-        const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-        
-        if (foundUser) {
-          const { password: _, ...userWithoutPassword } = foundUser;
-          const mockToken = 'mock-jwt-token-' + Date.now();
-          
-          localStorage.setItem('token', mockToken);
-          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          setUser(userWithoutPassword);
-          setIsAuthenticated(true);
-          return true;
-        }
+
+      // Frontend-only authentication with mock users
+      const foundUser = mockUsers.find(u => u.email === email && u.password === password);
+
+      if (foundUser) {
+        const { password: _, ...userWithoutPassword } = foundUser;
+        const mockToken = 'frontend-jwt-token-' + Date.now();
+
+        localStorage.setItem('token', mockToken);
+        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        setUser(userWithoutPassword);
+        setIsAuthenticated(true);
+        return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Login error:', error);
@@ -153,47 +128,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (data: RegisterData): Promise<boolean> => {
     try {
       setLoading(true);
-      
-      // Try real API first
-      try {
-        const response = await AuthService.register({
-          fullName: data.fullName,
-          email: data.email,
-          password: data.password,
-          role: data.role,
-        });
-        
-        if (response.token && response.user) {
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('user', JSON.stringify(response.user));
-          setUser(response.user);
-          setIsAuthenticated(true);
-          return true;
-        }
-      } catch (error) {
-        console.log('API not available, using mock registration');
-        
-        // Fallback to mock registration
-        const newUser: User = {
-          id: Date.now(),
-          email: data.email,
-          fullName: data.fullName,
-          role: data.role,
-          phoneNumber: `+1 (555) ${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-          address: '123 New User St, Registration City',
-          isActive: true
-        };
-        
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('user', JSON.stringify(newUser));
-        setUser(newUser);
-        setIsAuthenticated(true);
-        return true;
+
+      // Check if email already exists
+      const existingUser = mockUsers.find(u => u.email === data.email);
+      if (existingUser) {
+        return false; // Email already exists
       }
-      
-      return false;
+
+      // Frontend-only registration with mock data
+      const newUser: User = {
+        id: Date.now(),
+        email: data.email,
+        fullName: data.fullName,
+        role: data.role,
+        phoneNumber: `+1 (555) ${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+        address: '123 New User St, Registration City',
+        isActive: true
+      };
+
+      // Add to mock users for future login
+      mockUsers.push({ ...newUser, password: data.password } as any);
+
+      const mockToken = 'frontend-jwt-token-' + Date.now();
+
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(newUser));
+      setUser(newUser);
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
       console.error('Registration error:', error);
       return false;
