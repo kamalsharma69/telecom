@@ -1,10 +1,14 @@
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { AuthService } from '../services/api';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
   fullName: string;
-  role: 'customer' | 'admin';
+  role: 'CUSTOMER' | 'ADMIN';
+  phoneNumber?: string;
+  address?: string;
+  isActive: boolean;
 }
 
 interface AuthContextType {
@@ -13,13 +17,14 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
+  loading: boolean;
 }
 
 interface RegisterData {
   fullName: string;
   email: string;
   password: string;
-  role: 'customer' | 'admin';
+  role: 'CUSTOMER' | 'ADMIN';
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,22 +40,53 @@ export const useAuth = (): AuthContextType => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (storedToken && storedUser) {
+          try {
+            // Validate token with backend
+            await AuthService.validateToken();
+            
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setIsAuthenticated(true);
+          } catch (error) {
+            // Token is invalid, clear storage
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Simulate API call
-      const mockUsers = [
-        { id: '1', email: 'admin@telecom.com', password: 'admin123', fullName: 'Admin User', role: 'admin' as const },
-        { id: '2', email: 'customer@email.com', password: 'customer123', fullName: 'Customer User', role: 'customer' as const }
-      ];
+      setLoading(true);
       
-      const foundUser = mockUsers.find(u => u.email === email && u.password === password);
+      const response = await AuthService.login(email, password);
       
-      if (foundUser) {
-        const { password: _, ...userWithoutPassword } = foundUser;
-        setUser(userWithoutPassword);
+      if (response.token && response.user) {
+        // Store token and user data
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        setUser(response.user);
         setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        
         return true;
       }
       
@@ -58,56 +94,56 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Login error:', error);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (data: RegisterData): Promise<boolean> => {
     try {
-      // Simulate API call
-      const newUser: User = {
-        id: Date.now().toString(),
-        email: data.email,
-        fullName: data.fullName,
-        role: data.role
-      };
+      setLoading(true);
       
-      setUser(newUser);
-      setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      return true;
+      const response = await AuthService.register({
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+      });
+      
+      if (response.token && response.user) {
+        // Store token and user data
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        setUser(response.user);
+        setIsAuthenticated(true);
+        
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Registration error:', error);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = (): void => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
-
-  // Check for stored user on mount
-  React.useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('user');
-      }
-    }
-  }, []);
 
   const value: AuthContextType = {
     user,
     isAuthenticated,
     login,
     register,
-    logout
+    logout,
+    loading
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
