@@ -1,101 +1,92 @@
 package com.telecom.sim.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sim_cards")
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class SimCard {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(name = "sim_number", unique = true, nullable = false)
-    private String simNumber;
-    
-    @Column(name = "phone_number", unique = true)
-    private String phoneNumber;
-    
-    @Column(name = "user_id")
+
+    @Column(unique = true, nullable = false)
+    private String number;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
     private Long userId;
-    
-    @Column(name = "plan_id")
     private Long planId;
+    private String planName;
     
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SimStatus status;
+    private String dataUsed = "0GB";
+    private String dataTotal;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "network_type")
-    private NetworkType networkType;
-    
-    @Column(name = "data_used_mb")
-    private Long dataUsedMb = 0L;
-    
-    @Column(name = "data_limit_mb")
-    private Long dataLimitMb;
-    
-    @Column(name = "signal_strength")
-    private Integer signalStrength = 100;
-    
-    @Column(name = "last_location")
-    private String lastLocation;
-    
-    @Column(name = "activation_date")
     private LocalDateTime activationDate;
-    
-    @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
-    
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (status == null) {
-            status = SimStatus.INACTIVE;
-        }
-        if (networkType == null) {
-            networkType = NetworkType.FOUR_G;
-        }
+
+    public enum Status {
+        ACTIVE, INACTIVE, SUSPENDED, EXPIRED
     }
-    
+
+    // Constructors
+    public SimCard() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        this.status = Status.INACTIVE;
+    }
+
+    public SimCard(String number, Long userId, Long planId, String planName, String dataTotal) {
+        this();
+        this.number = number;
+        this.userId = userId;
+        this.planId = planId;
+        this.planName = planName;
+        this.dataTotal = dataTotal;
+    }
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getNumber() { return number; }
+    public void setNumber(String number) { this.number = number; }
+
+    public Status getStatus() { return status; }
+    public void setStatus(Status status) { this.status = status; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+
+    public Long getPlanId() { return planId; }
+    public void setPlanId(Long planId) { this.planId = planId; }
+
+    public String getPlanName() { return planName; }
+    public void setPlanName(String planName) { this.planName = planName; }
+
+    public String getDataUsed() { return dataUsed; }
+    public void setDataUsed(String dataUsed) { this.dataUsed = dataUsed; }
+
+    public String getDataTotal() { return dataTotal; }
+    public void setDataTotal(String dataTotal) { this.dataTotal = dataTotal; }
+
+    public LocalDateTime getActivationDate() { return activationDate; }
+    public void setActivationDate(LocalDateTime activationDate) { this.activationDate = activationDate; }
+
+    public LocalDateTime getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(LocalDateTime expiryDate) { this.expiryDate = expiryDate; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
     @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-    
-    public enum SimStatus {
-        ACTIVE, INACTIVE, SUSPENDED, EXPIRED, PENDING_ACTIVATION
-    }
-    
-    public enum NetworkType {
-        TWO_G("2G"), THREE_G("3G"), FOUR_G("4G"), FIVE_G("5G");
-        
-        private final String displayName;
-        
-        NetworkType(String displayName) {
-            this.displayName = displayName;
-        }
-        
-        public String getDisplayName() {
-            return displayName;
-        }
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
