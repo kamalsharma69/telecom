@@ -1,113 +1,100 @@
 package com.telecom.sim.controller;
 
 import com.telecom.sim.dto.SimActivationRequest;
-import com.telecom.sim.dto.SimCardDto;
+import com.telecom.sim.dto.SimRequestDto;
 import com.telecom.sim.entity.SimCard;
-import com.telecom.sim.service.SimCardService;
+import com.telecom.sim.entity.SimRequest;
+import com.telecom.sim.service.SimService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/sims")
-@RequiredArgsConstructor
-@Slf4j
-@CrossOrigin(origins = "*")
+@RequestMapping("/sims")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"})
 public class SimController {
-    
-    private final SimCardService simCardService;
-    
-    @PostMapping("/activate")
-    public ResponseEntity<SimCardDto> activateSim(@Valid @RequestBody SimActivationRequest request) {
-        try {
-            log.info("SIM activation request received: {}", request.getSimNumber());
-            SimCardDto response = simCardService.activateSim(request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("SIM activation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
-    }
-    
+
+    @Autowired
+    private SimService simService;
+
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<SimCardDto>> getSimsByUserId(@PathVariable Long userId) {
+    public ResponseEntity<List<SimCard>> getSimCardsByUser(@PathVariable Long userId) {
+        List<SimCard> simCards = simService.getSimCardsByUserId(userId);
+        return ResponseEntity.ok(simCards);
+    }
+
+    @PostMapping("/activate")
+    public ResponseEntity<SimCard> activateSim(@Valid @RequestBody SimActivationRequest request) {
         try {
-            List<SimCardDto> sims = simCardService.getSimsByUserId(userId);
-            return ResponseEntity.ok(sims);
+            SimCard simCard = simService.activateSim(request);
+            return ResponseEntity.ok(simCard);
         } catch (Exception e) {
-            log.error("Failed to get SIMs for user {}: {}", userId, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-    
-    @GetMapping("/user/{userId}/active")
-    public ResponseEntity<List<SimCardDto>> getActiveSimsByUserId(@PathVariable Long userId) {
+
+    @GetMapping("/requests")
+    public ResponseEntity<List<SimRequest>> getSimRequests() {
+        List<SimRequest> requests = simService.getAllSimRequests();
+        return ResponseEntity.ok(requests);
+    }
+
+    @GetMapping("/requests/pending")
+    public ResponseEntity<List<SimRequest>> getPendingSimRequests() {
+        List<SimRequest> requests = simService.getPendingSimRequests();
+        return ResponseEntity.ok(requests);
+    }
+
+    @PostMapping("/requests/{id}/approve")
+    public ResponseEntity<SimRequest> approveSimRequest(@PathVariable Long id) {
         try {
-            List<SimCardDto> sims = simCardService.getActiveSimsByUserId(userId);
-            return ResponseEntity.ok(sims);
+            SimRequest request = simService.approveSimRequest(id);
+            return ResponseEntity.ok(request);
         } catch (Exception e) {
-            log.error("Failed to get active SIMs for user {}: {}", userId, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-    
-    @GetMapping("/pending")
-    public ResponseEntity<List<SimCardDto>> getPendingActivations() {
+
+    @PostMapping("/requests/{id}/reject")
+    public ResponseEntity<SimRequest> rejectSimRequest(@PathVariable Long id) {
         try {
-            List<SimCardDto> pendingSims = simCardService.getPendingActivationRequests();
-            return ResponseEntity.ok(pendingSims);
+            SimRequest request = simService.rejectSimRequest(id);
+            return ResponseEntity.ok(request);
         } catch (Exception e) {
-            log.error("Failed to get pending activations: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-    
-    @PutMapping("/{simId}/status")
-    public ResponseEntity<SimCardDto> updateSimStatus(
-            @PathVariable Long simId, 
-            @RequestParam SimCard.SimStatus status) {
+
+    @PostMapping("/requests")
+    public ResponseEntity<SimRequest> createSimRequest(@Valid @RequestBody SimRequestDto requestDto) {
         try {
-            SimCardDto updatedSim = simCardService.updateSimStatus(simId, status);
-            return ResponseEntity.ok(updatedSim);
+            SimRequest request = simService.createSimRequest(requestDto);
+            return ResponseEntity.ok(request);
         } catch (Exception e) {
-            log.error("Failed to update SIM status: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-    
-    @PutMapping("/{simId}/data-usage")
-    public ResponseEntity<SimCardDto> updateDataUsage(
-            @PathVariable Long simId, 
-            @RequestParam Long dataUsedMb) {
+
+    @PutMapping("/{id}/suspend")
+    public ResponseEntity<SimCard> suspendSim(@PathVariable Long id) {
         try {
-            SimCardDto updatedSim = simCardService.updateDataUsage(simId, dataUsedMb);
-            return ResponseEntity.ok(updatedSim);
+            SimCard simCard = simService.suspendSim(id);
+            return ResponseEntity.ok(simCard);
         } catch (Exception e) {
-            log.error("Failed to update data usage: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-    
-    @GetMapping("/{simId}")
-    public ResponseEntity<SimCardDto> getSimById(@PathVariable Long simId) {
-        return simCardService.getSimById(simId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
-    @GetMapping("/stats/active-count")
-    public ResponseEntity<Long> getActiveSimsCount() {
-        long count = simCardService.getActiveSims();
-        return ResponseEntity.ok(count);
-    }
-    
-    @GetMapping("/stats/pending-count")
-    public ResponseEntity<Long> getPendingActivationsCount() {
-        long count = simCardService.getPendingActivations();
-        return ResponseEntity.ok(count);
+
+    @PutMapping("/{id}/reactivate")
+    public ResponseEntity<SimCard> reactivateSim(@PathVariable Long id) {
+        try {
+            SimCard simCard = simService.reactivateSim(id);
+            return ResponseEntity.ok(simCard);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
