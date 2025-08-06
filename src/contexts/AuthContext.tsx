@@ -75,38 +75,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (storedToken && storedUser) {
           try {
-            // Check if backend is available
-            const backendAvailable = await checkBackendHealth();
-
-            if (backendAvailable && !storedToken.startsWith('mock-')) {
-              // Validate token with backend
-              try {
-                const response = await AuthService.validateToken();
-                if (response.user) {
-                  setUser(response.user);
-                  setIsAuthenticated(true);
-                } else {
-                  throw new Error('Invalid token response');
-                }
-              } catch (error) {
-                console.warn('Token validation failed, clearing auth state');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-              }
+            // Always use stored user data for demo purposes
+            const parsedUser = JSON.parse(storedUser);
+            if (parsedUser && parsedUser.email) {
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              console.log('Restored user session:', parsedUser.email);
             } else {
-              // Use stored user data (mock or offline mode)
-              const parsedUser = JSON.parse(storedUser);
-              if (parsedUser && parsedUser.email) {
-                setUser(parsedUser);
-                setIsAuthenticated(true);
-              } else {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-              }
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
             }
           } catch (error) {
-            console.error('Error validating auth:', error);
-            // Invalid stored data, clear storage
+            console.error('Error parsing stored user data:', error);
             localStorage.removeItem('token');
             localStorage.removeItem('user');
           }
@@ -125,7 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
 
-      // Try backend authentication first
+      // Try authentication (will use mock or real API)
       const response = await AuthService.login(email, password);
 
       if (response.token && response.user) {
@@ -133,6 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('user', JSON.stringify(response.user));
         setUser(response.user);
         setIsAuthenticated(true);
+        console.log('Login successful for:', response.user.email);
         return true;
       }
 
@@ -149,7 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
 
-      // Try backend registration first
+      // Try registration (will use mock or real API)
       const response = await AuthService.register(data);
 
       if (response.token && response.user) {
@@ -157,6 +138,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('user', JSON.stringify(response.user));
         setUser(response.user);
         setIsAuthenticated(true);
+        console.log('Registration successful for:', response.user.email);
         return true;
       }
 
