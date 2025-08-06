@@ -1,195 +1,268 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+// Frontend-only mock services for telecom portal
 
-// API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
-
-// API Endpoints
-export const API_ENDPOINTS = {
-  // User Service
-  AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    VALIDATE: '/auth/validate',
+// Mock data for frontend functionality
+export const mockPlans = [
+  {
+    id: 1,
+    name: 'Basic Plan',
+    price: 29.99,
+    data: '5GB',
+    calls: 'Unlimited',
+    sms: '100',
+    validity: '30 days',
+    description: 'Perfect for light users'
   },
-  // SIM Service  
-  SIM: {
-    ACTIVATE: '/sims/activate',
-    USER_SIMS: (userId: number) => `/sims/user/${userId}`,
-    ACTIVE_USER_SIMS: (userId: number) => `/sims/user/${userId}/active`,
-    UPDATE_STATUS: (simId: number) => `/sims/${simId}/status`,
-    UPDATE_DATA: (simId: number) => `/sims/${simId}/data-usage`,
-    PENDING: '/sims/pending',
-    STATS: {
-      ACTIVE_COUNT: '/sims/stats/active-count',
-      PENDING_COUNT: '/sims/stats/pending-count',
-    }
+  {
+    id: 2,
+    name: 'Premium Plan',
+    price: 49.99,
+    data: '15GB',
+    calls: 'Unlimited',
+    sms: 'Unlimited',
+    validity: '30 days',
+    description: 'Best for regular users'
   },
-  // Plan Service
-  PLAN: {
-    ALL: '/plans',
-    BY_ID: (id: number) => `/plans/${id}`,
-    CREATE: '/plans',
-    UPDATE: (id: number) => `/plans/${id}`,
-    DELETE: (id: number) => `/plans/${id}`,
+  {
+    id: 3,
+    name: 'Enterprise Plan',
+    price: 99.99,
+    data: 'Unlimited',
+    calls: 'Unlimited',
+    sms: 'Unlimited',
+    validity: '30 days',
+    description: 'For heavy data users'
+  }
+];
+
+export const mockSimCards = [
+  {
+    id: 1,
+    number: '+1 (555) 123-4567',
+    status: 'Active',
+    plan: 'Premium Plan',
+    dataUsed: '8.2GB',
+    dataTotal: '15GB',
+    expiryDate: '2024-02-15',
+    activationDate: '2024-01-15'
   },
-  // Billing Service
-  BILLING: {
-    USER_BILLS: (userId: number) => `/billing/user/${userId}`,
-    GENERATE: '/billing/generate',
-    DOWNLOAD: (billId: number) => `/billing/${billId}/download`,
+  {
+    id: 2,
+    number: '+1 (555) 987-6543',
+    status: 'Inactive',
+    plan: 'Basic Plan',
+    dataUsed: '0GB',
+    dataTotal: '5GB',
+    expiryDate: '2024-01-20',
+    activationDate: '2024-01-01'
   }
-};
+];
 
-// Create Axios Instance
-const createApiInstance = (): AxiosInstance => {
-  const instance = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 10000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+export const mockBills = [
+  {
+    id: 1,
+    month: 'January 2024',
+    amount: 49.99,
+    status: 'Paid',
+    dueDate: '2024-01-31',
+    paidDate: '2024-01-25',
+    planName: 'Premium Plan',
+    dataUsage: '12.5GB'
+  },
+  {
+    id: 2,
+    month: 'December 2023',
+    amount: 49.99,
+    status: 'Paid',
+    dueDate: '2023-12-31',
+    paidDate: '2023-12-28',
+    planName: 'Premium Plan',
+    dataUsage: '14.8GB'
+  },
+  {
+    id: 3,
+    month: 'November 2023',
+    amount: 29.99,
+    status: 'Paid',
+    dueDate: '2023-11-30',
+    paidDate: '2023-11-22',
+    planName: 'Basic Plan',
+    dataUsage: '4.2GB'
+  }
+];
 
-  // Request Interceptor - Add JWT Token
-  instance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
+export const mockSimRequests = [
+  {
+    id: 1,
+    customerName: 'John Doe',
+    email: 'john.doe@email.com',
+    phoneNumber: '+1 (555) 000-1234',
+    planId: 2,
+    planName: 'Premium Plan',
+    status: 'Pending',
+    requestDate: '2024-01-20',
+    documents: ['ID Card', 'Address Proof']
+  },
+  {
+    id: 2,
+    customerName: 'Jane Smith',
+    email: 'jane.smith@email.com',
+    phoneNumber: '+1 (555) 000-5678',
+    planId: 1,
+    planName: 'Basic Plan',
+    status: 'Pending',
+    requestDate: '2024-01-19',
+    documents: ['ID Card', 'Address Proof']
+  },
+  {
+    id: 3,
+    customerName: 'Mike Johnson',
+    email: 'mike.johnson@email.com',
+    phoneNumber: '+1 (555) 000-9012',
+    planId: 3,
+    planName: 'Enterprise Plan',
+    status: 'Approved',
+    requestDate: '2024-01-18',
+    documents: ['ID Card', 'Address Proof', 'Business License']
+  }
+];
+
+// Mock API services for frontend-only operation
+export class PlanService {
+  static async getPlans() {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockPlans;
+  }
+
+  static async createPlan(planData: any) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const newPlan = {
+      id: Date.now(),
+      ...planData
+    };
+    mockPlans.push(newPlan);
+    return newPlan;
+  }
+
+  static async updatePlan(id: number, planData: any) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const index = mockPlans.findIndex(plan => plan.id === id);
+    if (index !== -1) {
+      mockPlans[index] = { ...mockPlans[index], ...planData };
+      return mockPlans[index];
     }
-  );
+    throw new Error('Plan not found');
+  }
 
-  // Response Interceptor - Handle Errors
-  instance.interceptors.response.use(
-    (response: AxiosResponse) => {
-      return response;
-    },
-    (error) => {
-      if (error.response?.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
-      return Promise.reject(error);
+  static async deletePlan(id: number) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const index = mockPlans.findIndex(plan => plan.id === id);
+    if (index !== -1) {
+      mockPlans.splice(index, 1);
+      return true;
     }
-  );
-
-  return instance;
-};
-
-export const api = createApiInstance();
-
-// API Service Classes
-export class AuthService {
-  static async login(email: string, password: string) {
-    const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
-    return response.data;
-  }
-
-  static async register(userData: {
-    fullName: string;
-    email: string;
-    password: string;
-    role: 'CUSTOMER' | 'ADMIN';
-  }) {
-    const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userData);
-    return response.data;
-  }
-
-  static async validateToken() {
-    const response = await api.get(API_ENDPOINTS.AUTH.VALIDATE);
-    return response.data;
+    throw new Error('Plan not found');
   }
 }
 
 export class SimService {
-  static async activateSim(data: {
-    simNumber: string;
-    userId: number;
-    planId: number;
-    networkType?: string;
-    location?: string;
-  }) {
-    const response = await api.post(API_ENDPOINTS.SIM.ACTIVATE, data);
-    return response.data;
+  static async getSimCards(userId: number) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockSimCards;
   }
 
-  static async getUserSims(userId: number) {
-    const response = await api.get(API_ENDPOINTS.SIM.USER_SIMS(userId));
-    return response.data;
+  static async activateSim(planId: number) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const plan = mockPlans.find(p => p.id === planId);
+    if (!plan) throw new Error('Plan not found');
+    
+    const newSim = {
+      id: Date.now(),
+      number: `+1 (555) ${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      status: 'Active',
+      plan: plan.name,
+      dataUsed: '0GB',
+      dataTotal: plan.data,
+      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      activationDate: new Date().toISOString().split('T')[0]
+    };
+    
+    mockSimCards.push(newSim);
+    return newSim;
   }
 
-  static async getActiveUserSims(userId: number) {
-    const response = await api.get(API_ENDPOINTS.SIM.ACTIVE_USER_SIMS(userId));
-    return response.data;
+  static async getSimRequests() {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockSimRequests;
   }
 
-  static async updateSimStatus(simId: number, status: string) {
-    const response = await api.put(`${API_ENDPOINTS.SIM.UPDATE_STATUS(simId)}?status=${status}`);
-    return response.data;
+  static async approveSimRequest(id: number) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const request = mockSimRequests.find(req => req.id === id);
+    if (request) {
+      request.status = 'Approved';
+      return request;
+    }
+    throw new Error('Request not found');
   }
 
-  static async updateDataUsage(simId: number, dataUsedMb: number) {
-    const response = await api.put(`${API_ENDPOINTS.SIM.UPDATE_DATA(simId)}?dataUsedMb=${dataUsedMb}`);
-    return response.data;
-  }
-
-  static async getPendingRequests() {
-    const response = await api.get(API_ENDPOINTS.SIM.PENDING);
-    return response.data;
-  }
-
-  static async getActiveSimsCount() {
-    const response = await api.get(API_ENDPOINTS.SIM.STATS.ACTIVE_COUNT);
-    return response.data;
-  }
-}
-
-export class PlanService {
-  static async getAllPlans() {
-    const response = await api.get(API_ENDPOINTS.PLAN.ALL);
-    return response.data;
-  }
-
-  static async getPlanById(id: number) {
-    const response = await api.get(API_ENDPOINTS.PLAN.BY_ID(id));
-    return response.data;
-  }
-
-  static async createPlan(planData: any) {
-    const response = await api.post(API_ENDPOINTS.PLAN.CREATE, planData);
-    return response.data;
-  }
-
-  static async updatePlan(id: number, planData: any) {
-    const response = await api.put(API_ENDPOINTS.PLAN.UPDATE(id), planData);
-    return response.data;
-  }
-
-  static async deletePlan(id: number) {
-    const response = await api.delete(API_ENDPOINTS.PLAN.DELETE(id));
-    return response.data;
+  static async rejectSimRequest(id: number) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const request = mockSimRequests.find(req => req.id === id);
+    if (request) {
+      request.status = 'Rejected';
+      return request;
+    }
+    throw new Error('Request not found');
   }
 }
 
 export class BillingService {
-  static async getUserBills(userId: number) {
-    const response = await api.get(API_ENDPOINTS.BILLING.USER_BILLS(userId));
-    return response.data;
+  static async getBills(userId: number) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockBills;
   }
 
   static async downloadBill(billId: number) {
-    const response = await api.get(API_ENDPOINTS.BILLING.DOWNLOAD(billId), {
-      responseType: 'blob'
-    });
-    return response.data;
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const bill = mockBills.find(b => b.id === billId);
+    if (!bill) throw new Error('Bill not found');
+    
+    // Create a mock PDF download
+    const link = document.createElement('a');
+    link.href = 'data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFsgMyAwIFIgXQovQ291bnQgMQo+PgplbmRvYmoKMyAwIG9iago8PAovVHlwZSAvUGFnZQovUGFyZW50IDIgMCBSCi9NZWRpYUJveCBbIDAgMCA2MTIgNzkyIF0KL1Jlc291cmNlcyA8PAovRm9udCA8PAovRjEgNCAwIFIKPj4KPj4KL0NvbnRlbnRzIDUgMCBSCj4+CmVuZG9iagplbmRvYmoK';
+    link.download = `bill-${bill.month.replace(' ', '-')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    return true;
   }
 }
 
-export default api;
+// Keep the AuthService class for backwards compatibility but make it frontend-only
+export class AuthService {
+  static async login(email: string, password: string) {
+    // This is handled by AuthContext now
+    throw new Error('Use AuthContext for authentication');
+  }
+
+  static async register(data: any) {
+    // This is handled by AuthContext now
+    throw new Error('Use AuthContext for authentication');
+  }
+
+  static async validateToken() {
+    // Frontend-only token validation
+    const token = localStorage.getItem('token');
+    if (!token || !token.startsWith('frontend-jwt-token-')) {
+      throw new Error('Invalid token');
+    }
+    return true;
+  }
+
+  static async logout() {
+    // This is handled by AuthContext now
+    throw new Error('Use AuthContext for authentication');
+  }
+}
