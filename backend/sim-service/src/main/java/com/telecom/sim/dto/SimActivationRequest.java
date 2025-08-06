@@ -1,26 +1,35 @@
 package com.telecom.sim.dto;
 
-import com.telecom.sim.entity.SimCard;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import lombok.Data;
 
-@Data
 public class SimActivationRequest {
-    
-    @NotBlank(message = "SIM number is required")
-    @Pattern(regexp = "\\d{20}", message = "SIM number must be 20 digits")
-    private String simNumber;
-    
-    @NotNull(message = "User ID is required")
+    @NotNull
     private Long userId;
     
-    @NotNull(message = "Plan ID is required")
+    @NotNull
     private Long planId;
     
-    private SimCard.NetworkType networkType = SimCard.NetworkType.FOUR_G;
-    
-    private String phoneNumber;
-    private String location;
+    private String planName;
+    private String dataTotal;
+
+    public SimActivationRequest() {}
+
+    public SimActivationRequest(Long userId, Long planId, String planName, String dataTotal) {
+        this.userId = userId;
+        this.planId = planId;
+        this.planName = planName;
+        this.dataTotal = dataTotal;
+    }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+
+    public Long getPlanId() { return planId; }
+    public void setPlanId(Long planId) { this.planId = planId; }
+
+    public String getPlanName() { return planName; }
+    public void setPlanName(String planName) { this.planName = planName; }
+
+    public String getDataTotal() { return dataTotal; }
+    public void setDataTotal(String dataTotal) { this.dataTotal = dataTotal; }
 }
