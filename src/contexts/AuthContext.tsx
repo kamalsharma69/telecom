@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { AuthService, checkBackendHealth } from '../services/api';
+import { AuthService } from '../services/api';
 
 interface User {
   id: number;
@@ -37,29 +37,7 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Mock users for fallback when API is not available
-const mockUsers = [
-  { 
-    id: 1, 
-    email: 'admin@telecom.com', 
-    password: 'admin123', 
-    fullName: 'Admin User', 
-    role: 'ADMIN' as const,
-    phoneNumber: '+1 (555) 000-0001',
-    address: '123 Admin St, Admin City',
-    isActive: true
-  },
-  { 
-    id: 2, 
-    email: 'customer@email.com', 
-    password: 'customer123', 
-    fullName: 'Customer User', 
-    role: 'CUSTOMER' as const,
-    phoneNumber: '+1 (555) 000-0002',
-    address: '456 Customer Ave, Customer Town',
-    isActive: true
-  }
-];
+// Mock users are now handled in the API service
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
