@@ -11,13 +11,24 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: strin
   children, 
   requiredRole 
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700">
+        <div className="text-center text-white">
+          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl font-semibold">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   
-  if (requiredRole && user?.role !== requiredRole) {
+  if (requiredRole && user?.role.toLowerCase() !== requiredRole) {
     return <Navigate to="/login" replace />;
   }
   
@@ -25,11 +36,22 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: strin
 };
 
 const AppRoutes: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700">
+        <div className="text-center text-white">
+          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl font-semibold">Loading Telecom Portal...</p>
+        </div>
+      </div>
+    );
+  }
   
   const getDefaultRoute = () => {
     if (!isAuthenticated) return '/login';
-    return user?.role === 'admin' ? '/admin' : '/dashboard';
+    return user?.role.toLowerCase() === 'admin' ? '/admin' : '/dashboard';
   };
   
   return (
